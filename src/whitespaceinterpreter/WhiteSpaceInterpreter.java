@@ -10,16 +10,16 @@ import java.util.Scanner;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import static whitespaceinterpreter.IE.IE;
 
 /**
  *
  * @author faurehu
- */
+ */ 
 public class WhiteSpaceInterpreter {
 
     private static int pc = 0;
     private static Stack st = new Stack();
+    private static Stack subroutine = new Stack();
     
     public static void main (String[] args) {
         
@@ -27,28 +27,17 @@ public class WhiteSpaceInterpreter {
                 + "instruction the whole program, the stack status and the program"
                 + " counter are printed.\n\tIn the program: \n\t\t1 stands for \" \" (SPACE)\n\t\t2 stands for \"   \" (TAB)\n\t\t3 stands for a new line.\n\n");
         
-        try{        
-            
-        String s = readFile("evennumbers.ws");
-        
+        try{      
+        String s = readFile("evennumbersto20.ws");
         ArrayList<Integer> program = whiteInterpret(s);
-        
         runProgram(program);
-
-        } catch(IOException e) {
-            
-        System.out.println("The file cannot be found.");
+        } catch(IOException e) { 
+        System.out.println("file cannot be found.");
         System.exit(1);
-            
         }
-        
         System.out.println("The program has been interpreted. Now exiting.");
        
-    } 
-    
-    /* Main to experiment with IE.java
-    public static void main(String[] args) { Baby baby = new Baby("Foo"); boolean yayOrNay = true; IE("baby?sayName:cry",yayOrNay);};
-    */
+    }
     
     public static String readFile(String s) throws IOException {
         
@@ -57,60 +46,34 @@ public class WhiteSpaceInterpreter {
         String file = "";
         
         try {
-            
             is = new FileInputStream(s);
-            
             dis = new DataInputStream(is);
-            
             int length = dis.available();
-            
             byte[] buf = new byte[length];
-            
             dis.readFully(buf);
-            
             for(byte b: buf) { 
                 char c = (char)b;
                 file += c;
-            }
-            
+            }  
         } catch (Exception e) {
-            
-            e.printStackTrace();
-            
+            e.printStackTrace(); 
         }
         
         if(is!=null) {
-            
             try {
-                
                 is.close();
-                
-            } catch (Exception IOException) {
-                
-                
-                
-            } 
-            
+            } catch (Exception IOException) { IOException.printStackTrace();} 
         }
         
         if(dis!=null) {
-            
             try {
-                
                 dis.close();
-                
-            } catch (Exception IOException) {
-                
-                
-                
-            }
+            } catch (Exception IOException) { IOException.printStackTrace();}
             
         }
         
-        
         return file;        
-        
-        
+          
     }
     
     public static ArrayList<Integer> whiteInterpret(String s) {
@@ -158,8 +121,8 @@ public class WhiteSpaceInterpreter {
         ArrayList<Integer> buffer;
         ArrayList<Integer> number;
         int endIndex = 0;
-        
         Map label = new HashMap();
+        Map heap = new HashMap();
         boolean preprocessing = true;
         
         for(int pass = 0; pass < 2; pass++) {
@@ -219,12 +182,27 @@ public class WhiteSpaceInterpreter {
                                             buffer = new ArrayList<Integer>(program.subList(pc+4, program.size()));
                                             endIndex = buffer.indexOf(3);
                                             number = new ArrayList<Integer>(buffer.subList(0,endIndex));
+                                            if(preprocessing != true) {
                                             int j = programToDecimal(number);
                                             System.out.println("Copying the number " + j + " on top of the stack.");
                                             st.addLast(st.getNumber(j));
+                                            }
+                                            pc = pc + number.size() + 5;
                                             break;
                                     }
-                                break;    
+                                break;
+                                case 3:
+                                    buffer = new ArrayList<Integer>(program.subList(pc+4, program.size()));
+                                    endIndex = buffer.indexOf(3);
+                                    number = new ArrayList<Integer>(buffer.subList(0,endIndex));
+                                    if(preprocessing != true) {
+                                    int j = programToDecimal(number);
+                                    System.out.println("Sliding " + j + " numbers off the stack.");
+                                    st.slide(j);
+                                    }
+                                    pc = pc + number.size() + 2;
+                                 break;
+                                    
                             }
                             break;
                         case 3:
@@ -308,6 +286,15 @@ public class WhiteSpaceInterpreter {
                             }
                         break;
                         case 2:
+                            if(preprocessing != true) {
+                            System.out.println("Entering Heap Access");
+                            }
+                            switch(pc+2) {
+                                case 1:
+                                    break;
+                                case 2:
+                                    break;
+                            }
                             break;
                         case 3:
                             if(preprocessing != true) {
@@ -353,6 +340,13 @@ public class WhiteSpaceInterpreter {
                                     number = new ArrayList<Integer>(buffer.subList(0,endIndex));
                                     pc = pc + number.size() + 4;
                                     label.put(number,pc);
+                                break;
+                                case 2:
+                                    pc = pc+3;
+                                    if(preprocessing != true) {
+                                    System.out.println("Calling a subroutine.");
+                                    subroutine.addLast(pc);
+                                    }
                                 break;
                                 case 3:
                                     if(preprocessing != true) {
@@ -406,13 +400,37 @@ public class WhiteSpaceInterpreter {
                                     System.out.println("Last number in the stack is not negative. Skipping the label.");
                                     }
                                     pc = pc + number.size() + 4;
+                                    break;
+                                case 3:
+                                    if(preprocessing != true) {
+                                        System.out.println("Ending a subroutine.");
+                                        pc = subroutine.peek();
+                                        subroutine.removeLast();
+                                    }
+                                    break;
                             }
                         break;
                         case 3:
                             switch(pc+2) {
+                                case 1:
+                                    if(preprocessing != true) {
+                                    System.out.println("Storing the top number into address (second to top).");
+                                    heap.put(st.peek2(), st.peek());
+                                    }
+                                    pc = pc+3;
+                                    break;
+                                case 2:
+                                    if(preprocessing != true) {
+                                    System.out.println("Retrieving number and putting it to top.");
+                                    heap.get(st.peek());
+                                    }
+                                    pc = pc+3;
+                                    break;
                                 case 3:
+                                    if(preprocessing != true) {
                                     System.out.println("Command to exit the program. Exiting.");
                                     System.exit(-1);
+                                    }
                                     break;
                             }
                         break;
@@ -425,8 +443,10 @@ public class WhiteSpaceInterpreter {
             }
         }
         
+        if(preprocessing != false) {
         System.out.println("The following labels have been processed: " + label.entrySet().toString());
         System.out.print("\n");
+        }
         preprocessing = false;
         pc = 0;
         
@@ -435,9 +455,7 @@ public class WhiteSpaceInterpreter {
     }
     
     public static int programToDecimal(ArrayList<Integer> number) {
-        
-        return toDecimal(toBinary(number));
-        
+        return toDecimal(toBinary(number));   
     }
     
     public static int toDecimal(String s) {
@@ -446,14 +464,10 @@ public class WhiteSpaceInterpreter {
         int sum = 0;
         
         for(int i = 0; i < w.length(); i++) {
-            
             if(w.charAt(i) == '1') {
-                
                 double d = Math.pow(2.0,i);
                 sum += d;
-                
             }
-            
         }
         
         return sum;
@@ -466,9 +480,7 @@ public class WhiteSpaceInterpreter {
         ArrayList x = new ArrayList();
         
         for(char y: a) {
-            
             x.add(y);
-            
         }
         
         Collections.reverse(x);
@@ -478,9 +490,7 @@ public class WhiteSpaceInterpreter {
         String reversed = "";
         
         while(it.hasNext()) {
-        
             reversed += it.next();
-        
         }
         
         return reversed;
@@ -494,30 +504,17 @@ public class WhiteSpaceInterpreter {
         for(Integer i: number) {
             
             if(i == 1) {
-                
                 binary += 0;
-                
             } else if (i == 2) {
-                
                 binary += 1;
-                
             } else if (i > 2 || i < 1) {
-                
                 System.out.println("Your number is misrepresented. Exiting program.");
                 System.exit(1);
-                
             }
-            
         } 
         
         return binary;
         
-    }
-    
-    public static String cleanComments(String s) {
-        
-        return "";
-        
-    }
+    }  
     
 }

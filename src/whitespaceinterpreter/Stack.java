@@ -94,6 +94,10 @@ public class Stack {
         
     }
     
+    public int peek2() {
+        return stack.get(stack.size()-2);
+    }
+    
     public void duplicateTop() {
         
         addLast(stack.getLast());
@@ -121,6 +125,17 @@ public class Stack {
         Collections.reverse(stack);
         return j;
         
+    }
+    
+    public void slide(int i) {
+        
+        int j = stack.pop();
+        for(int k = 0; k < i; k++) {
+            
+            stack.removeLast();
+            
+        }
+        stack.addLast(j);
     }
     
 }
